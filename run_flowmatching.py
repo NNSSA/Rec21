@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 from torchdyn.core import NeuralODE
+from torchdiffeq import odeint, odeint_adjoint
 from CustomUNET import UNet3D
 import matplotlib.pyplot as plt
 
@@ -11,7 +12,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 ################# Data ##################
 #########################################
 
-divider = 255.0
+divider = 1.0  # 255.0
 
 T21s_wr = (
     np.load(
@@ -26,14 +27,19 @@ T21s = (
     / divider
 )
 
+# means = np.mean(T21s_wr)
+# stds = np.std(T21s_wr)
+# T21s_wr = (T21s_wr - means) / stds
+# T21s = (T21s - means) / stds
+
 print(T21s_wr.shape)
 print(T21s.shape)
 
 d = 32
 
-Ntrain = 23900
-Ntest = 100
-Nbatch = 5
+Ntrain = 23000
+Ntest = 1000
+Nbatch = 10
 
 T21s_wr_train = torch.tensor(
     np.reshape(T21s_wr[:Ntrain], (Ntrain, 1, d, d, d)),
@@ -55,6 +61,12 @@ T21s_test = torch.tensor(
     device=device,
 )
 
+train_mean = torch.mean(torch.cat((T21s_wr_train, T21s_train)))
+train_std = torch.std(torch.cat((T21s_wr_train, T21s_train)))
+T21s_wr_train = (T21s_wr_train - train_mean) / train_std
+T21s_train = (T21s_train - train_mean) / train_std
+T21s_wr_test = (T21s_wr_test - train_mean) / train_std
+T21s_test = (T21s_test - train_mean) / train_std
 
 train_loader = torch.utils.data.DataLoader(
     [[T21s_wr_train[i], T21s_train[i]] for i in range(Ntrain)],
@@ -63,7 +75,7 @@ train_loader = torch.utils.data.DataLoader(
 )
 test_loader = torch.utils.data.DataLoader(
     [[T21s_wr_test[i], T21s_test[i]] for i in range(Ntest)],
-    batch_size=Ntest,
+    batch_size=Nbatch,
     shuffle=True,
 )
 
@@ -191,13 +203,9 @@ class FlowMatching(torch.nn.Module):
         self.loss_train_list = []
         self.loss_fn = torch.nn.MSELoss()
 
-    def get_x_t(self, x0, x1, t):
-        t = t.view(t.shape[0], *([1] * (x0.dim() - 1)))
-        return (
-            t * x1
-            + (1 - t) * x0
-            + 1e-1 * torch.sqrt(2 * t * (1 - t)) * torch.randn_like(x0)
-        )
+    def get_x_t(self, x0, x1, eps, t):
+        # t = t.view(t.shape[0], *([1] * (x0.dim() - 1)))
+        return t * x1 + (1 - t) * x0 + t * (1 - t) * eps
 
     def compute_loss(
         self,
@@ -206,11 +214,11 @@ class FlowMatching(torch.nn.Module):
         t=None,
     ):
         if t is None:
-            t = torch.rand(x0.shape[0]).type_as(x0)
-        # eps = torch.randn_like(x0)
-        xt = self.get_x_t(x0, x1, t)
-        ut = x1 - xt
-        # should condition on x0 too?
+            t = torch.distributions.Uniform(0.0, 1.0).sample((x0.shape[0],)).type_as(x0)
+        t2 = t.view(t.shape[0], *([1] * (x0.dim() - 1)))
+        eps = torch.randn_like(x0)
+        xt = self.get_x_t(x0, x1, eps, t2)
+        ut = x1 - x0 + eps * (1 - 2.0 * t2)
         vt = self.flow_model(t, xt)
         return self.loss_fn(vt, ut)
 
@@ -240,6 +248,7 @@ class FlowMatching(torch.nn.Module):
 
                 optimizer.zero_grad()
                 loss.backward()
+                torch.nn.utils.clip_grad_norm_(self.flow_model.parameters(), 1.0)
                 optimizer.step()
 
                 running_loss += loss.item() * divider**2
@@ -249,7 +258,7 @@ class FlowMatching(torch.nn.Module):
             self.loss_train_list.append(running_loss / (i + 1))
             self.test_model()
 
-            if (epoch + 1) % 5 == 0:
+            if (epoch + 1) % 10 == 0:
                 optimizer.param_groups[0]["lr"] /= 2.0
                 print(optimizer.param_groups[0]["lr"])
 
@@ -266,19 +275,34 @@ class FlowMatching(torch.nn.Module):
         with torch.no_grad():
             traj = node.trajectory(
                 x0,
-                t_span=torch.linspace(0, 1, n_sampling_steps),
+                t_span=torch.linspace(0.0, 1.0, n_sampling_steps),
             )
         return traj[-1]
+
+    # def sample(self, x0, n_sampling_steps=10,):
+    #     # node = odeint(
+    #     #     torch_wrapper(self.flow_model),
+    #     #     # solver="dopri5",
+    #     #     # sensitivity="adjoint",
+    #     # )
+    #     with torch.no_grad():
+    #         traj = odeint_adjoint(self.flow_model,
+    #             x0,
+    #             torch.linspace(0.000001, 0.999999, n_sampling_steps).to(device),
+    #             rtol=1e-6,
+    #             atol=1e-6,
+    #         )
+    #     return traj[-1]
 
 
 flow_model = MyModel(
     in_channels=1,
     out_channels=1,
     num_blocks=4,
-    out_channels_first_layer=24,
+    out_channels_first_layer=32,
     embedding_dim=48,
     cond_embed_pref=4,
-    dropout=0.4,
+    dropout=0.3,
     normalization="instance",
     preactivation=True,
     padding=1,
@@ -296,17 +320,18 @@ print(
 
 FM_kernel = FlowMatching(flow_model=flow_model)
 lr = 1e-3
-epochs = 15
+epochs = 30
 optimizer = torch.optim.Adam(flow_model.parameters(), lr=lr)  # , weight_decay=1e-8)
+print("Identity loss: ", FM_kernel.loss_fn(T21s_wr_train, T21s_train))
 FM_kernel.train_model(optimizer, epochs)
 
 torch.save(
     flow_model,
-    "/scratch4/mkamion1/nsabti1/21cm_ML/models/Flowmodel_T21_z15psi65_stochastic.pt",
+    "/scratch4/mkamion1/nsabti1/21cm_ML/models/Flowmodel_T21_z15psi65_deterministic_6.pt",
 )
 
 # flow_model = torch.load(
-#    "/scratch4/mkamion1/nsabti1/21cm_ML/models/Flowmodel_T21_z15psi65.pt"
+#    "/scratch4/mkamion1/nsabti1/21cm_ML/models/Flowmodel_T21_z15psi65_deterministic_6.pt"
 # )
 # FM_kernel = FlowMatching(flow_model=flow_model)
 
@@ -321,7 +346,7 @@ plt.semilogy(FM_kernel.loss_train_list, color="blue", label="train loss")
 plt.semilogy(FM_kernel.loss_test_list, color="red", label="test loss")
 plt.legend()
 # plt.axis(ymax=20)
-plt.savefig("loss_flowmatching_z15psi65_stochastic.png")
+plt.savefig("loss_flowmatching_z15psi65_deterministic_6.png")
 
 x0s, x1s = next(iter(test_loader))
 x0s.to(device)
@@ -330,7 +355,7 @@ x1s.to(device)
 fig, ax = plt.subplots(nrows=3, ncols=8, figsize=(20, 6))
 
 for row in range(3):
-    randnum = np.random.randint(0, Ntest - 1)
+    randnum = np.random.randint(0, Nbatch - 1)
     x0_to_use = x0s[randnum][None]
     x1_to_use = x1s[randnum][None]
     steps = [2, 8, 32, 64, 128]
@@ -369,4 +394,4 @@ for row in range(3):
     ax[row, -1].set_xticks([])
     ax[row, -1].set_yticks([])
 
-plt.savefig("reconstruction_flowmatching_z15psi65_stochastic.png")
+plt.savefig("reconstruction_flowmatching_z15psi65_deterministic_6.png")
