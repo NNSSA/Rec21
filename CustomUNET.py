@@ -130,7 +130,7 @@ class UNet3D(UNet):
         kwargs = {}
         kwargs["dimensions"] = 3
         kwargs["num_encoding_blocks"] = 4
-        kwargs["out_channels_first_layer"] = 32
+        kwargs["out_channels_first_layer"] = 24
         kwargs["normalization"] = "batch"
         kwargs.update(user_kwargs)
         super().__init__(*args, **kwargs)
