@@ -34,6 +34,16 @@ def get_hist(data, num_bins=40, weights=[None]):
 ###
 
 
+def confidence(data, num_bins=30, weights=[None]):
+    hist, bin_edges, bin_centres = get_hist(data, num_bins=num_bins, weights=weights)
+    levels = ctr_level(hist.copy(), [0.68])  # [0.68, 0.95])
+    pos = [np.searchsorted(hist, levels)[0], -np.searchsorted(hist[::-1], levels)[0]]
+    return bin_centres[pos]
+
+
+###
+
+
 def plot_hist(data, num_bins=30, weights=[None], color=None):
     if not any(weights):
         weights = np.ones(len(data))
@@ -44,6 +54,21 @@ def plot_hist(data, num_bins=30, weights=[None], color=None):
     plt.plot(bin_centres, hist / max(hist), color=color, lw=2)
     plt.step(bin_centres, hist / max(hist), where="mid", color=color)
     plt.show()
+
+
+###
+
+
+def adjust_lightness(color, amount=0.5):
+    import matplotlib.colors as mc
+    import colorsys
+
+    try:
+        c = mc.cnames[color]
+    except:
+        c = color
+    c = colorsys.rgb_to_hls(*mc.to_rgb(c))
+    return colorsys.hls_to_rgb(c[0], max(0, min(1, amount * c[1])), c[2])
 
 
 ###
@@ -112,8 +137,8 @@ def power_spectrum_2d(box, HII_DIM=128, BOX_LEN=512, num_k_bins=50):
     with np.errstate(divide="ignore", invalid="ignore"):
         power_spectrum_binned = np.nan_to_num(power_spectrum_binned / count_in_bins)
 
-    k_x = k_x_bins[1:]
-    k_perp = k_perp_bins[1:]
+    k_x = k_x_bins[1:]  # (k_x_bins[:-1] + k_x_bins[1:]) / 2
+    k_perp = k_perp_bins[1:]  # (k_perp_bins[:-1] + k_perp_bins[1:]) / 2
 
     return (
         power_spectrum_binned
@@ -141,9 +166,21 @@ ax1.tick_params(axis="both", which="major", labelsize=28)
 ax1.tick_params(axis="both", which="minor", labelsize=28)
 
 extent = [k_perp_x1[0], k_perp_x1[-1], k_parallel_x[0], k_parallel_x[-1]]
+
+# Plot the image
+# img = ax1.imshow(
+#     ratio,
+#     extent=extent,
+#     origin="lower",
+#     aspect="auto",
+#     cmap="viridis",
+#     vmin=0.5,
+#     vmax=1.5,
+# )
 img = ax1.pcolormesh(
     k_perp_x1, k_parallel_x, ratio, cmap="Blues", vmin=0.4, vmax=1.6, alpha=0.85
 )
+
 divider = make_axes_locatable(ax1)
 cax = divider.append_axes("right", size="5%", pad=0.15)
 
@@ -157,6 +194,7 @@ cbar.ax.set_ylabel(
 )
 
 x_array = np.geomspace(k_perp_x1.min(), k_perp_x1.max(), 1000)
+# Plot the wedge
 ax1.plot(
     x_array,
     np.maximum(x_array * np.tan(65 / 180 * np.pi), 0.05),
@@ -184,6 +222,7 @@ ax1.annotate(
     ),
 )
 
+
 ax1.semilogx()
 ax1.semilogy()
 ax1.set_xlim(k_perp_x1[0], k_perp_x1[-1])
@@ -201,7 +240,9 @@ power_spectra_samples = power_spectra[:-3]
 ps_x0 = power_spectra[-3]
 ps_x1 = power_spectra[-2]
 ps_avg = power_spectra[-1]
-
+ps_single_sample = (
+    np.load("power_spectrum_single_sample.npy") * k_bins**3 / (2 * np.pi**2)
+)
 ps_min, ps_max = limits()
 
 ax2 = plt.subplot(122)
@@ -213,24 +254,17 @@ ax2.plot(
     k_bins,
     ps_x1 / ps_x1,
     color="black",
-    ls=(1.6, (2, 1, 2, 1)),
-    lw=2.5,
-    label=r"$\mathrm{Ground\, Truth}$",
-)
-ax2.plot(
-    k_bins,
-    ps_x0 / ps_x1,
-    color=colors[2],
-    lw=2.5,
-    ls=(0, (1, 1.05)),
-    label=r"$\mathrm{Wedge\, Filtered}$",
+    # ls="dashed",
+    lw=1.5,
+    alpha=0.4,
+    # label=r"$\mathrm{Ground\, Truth}$",
 )
 
 ax2.fill_between(
     np.append(k_bins, k_bins[::-1]),
     np.append(ps_min, ps_max[::-1]),
     color=colors[3],
-    alpha=0.5,
+    alpha=0.4,
     lw=0,
     zorder=0,
 )
@@ -240,17 +274,38 @@ ax2.plot(
     color=colors[3],
     lw=2.5,
     zorder=2,
-    label=r"$\mathrm{Reconstructed}\ (95\%\ \mathrm{CL})$",
+    label=r"$\mathrm{95\%\ Confidence\ Levels}$",
 )
 ax2.plot(k_bins, ps_max, color=colors[3], lw=2.5, zorder=2)
+
+ax2.plot(
+    k_bins,
+    ps_single_sample / ps_x1,
+    color=colors[-2],
+    lw=2.5,
+    ls=(1.6, (3, 1.3, 3, 1.3)),
+    label=r"$\mathrm{Single\ Reconstructed\ Lightcone}$",
+    zorder=10,
+)
+
 ax2.plot(
     k_bins,
     ps_avg / ps_x1,
     color=colors[1],
     lw=2.5,
-    ls=(0, (3, 1, 1, 1)),
-    label=r"$\mathrm{Averaged\, Lightcone}$",
+    ls=(0, (3, 1.5, 1, 1.5)),
+    label=r"$\mathrm{Sample\hspace{-1mm}-\hspace{-1mm}Averaged\ Lightcone}$",
 )
+
+ax2.plot(
+    k_bins,
+    ps_x0 / ps_x1,
+    color=colors[2],
+    lw=2.5,
+    ls=(0, (1, 1.05)),
+    label=r"$\mathrm{Wedge\hspace{-1mm}-\hspace{-1mm}Filtered\ Lightcone}$",
+)
+
 
 # plotting specifications
 
@@ -261,7 +316,7 @@ ax2.legend(
     frameon=False,
     markerfirst=True,
     prop={"size": 22},
-    handlelength=1.65,
+    handlelength=1.8,
     handletextpad=0.7,
     numpoints=1,
 )

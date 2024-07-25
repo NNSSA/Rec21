@@ -46,38 +46,38 @@ ax[0, 5].imshow(x1[10, :, :], cmap="viridis")
 ax[0, 5].set_xticks([])
 ax[0, 5].set_yticks([])
 
-ax[0, 6].set_title(r"$\mathrm{Average}$", pad=8, fontsize=21)
+ax[0, 6].set_title(r"$\mathrm{Sample\ Average}$", pad=8, fontsize=21)
 ax[0, 6].imshow(average[10, :, :], cmap="viridis")
 ax[0, 6].set_xticks([])
 ax[0, 6].set_yticks([])
 
 
-ax[1, 0].imshow(x0[:, :, 10], cmap="viridis")
+ax[1, 0].imshow(x0[::-1, :, 10], cmap="viridis")
 ax[1, 0].set_xticks([])
 ax[1, 0].set_yticks([])
 ax[1, 0].set_ylabel(r"$\mathrm{Line\,of\,sight}$", labelpad=6, fontsize=23)
 
-ax[1, 1].imshow(step1[:, :, 10], cmap="viridis")
+ax[1, 1].imshow(step1[::-1, :, 10], cmap="viridis")
 ax[1, 1].set_xticks([])
 ax[1, 1].set_yticks([])
 
-ax[1, 2].imshow(step2[:, :, 10], cmap="viridis")
+ax[1, 2].imshow(step2[::-1, :, 10], cmap="viridis")
 ax[1, 2].set_xticks([])
 ax[1, 2].set_yticks([])
 
-ax[1, 3].imshow(step3[:, :, 10], cmap="viridis")
+ax[1, 3].imshow(step3[::-1, :, 10], cmap="viridis")
 ax[1, 3].set_xticks([])
 ax[1, 3].set_yticks([])
 
-ax[1, 4].imshow(step4[:, :, 10], cmap="viridis")
+ax[1, 4].imshow(step4[::-1, :, 10], cmap="viridis")
 ax[1, 4].set_xticks([])
 ax[1, 4].set_yticks([])
 
-ax[1, 5].imshow(x1[:, :, 10], cmap="viridis")
+ax[1, 5].imshow(x1[::-1, :, 10], cmap="viridis")
 ax[1, 5].set_xticks([])
 ax[1, 5].set_yticks([])
 
-ax[1, 6].imshow(average[:, :, 10], cmap="viridis")
+ax[1, 6].imshow(average[::-1, :, 10], cmap="viridis")
 ax[1, 6].set_xticks([])
 ax[1, 6].set_yticks([])
 

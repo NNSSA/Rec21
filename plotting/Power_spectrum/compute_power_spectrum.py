@@ -76,9 +76,9 @@ def compute_and_save_power_spectra(
 folder1 = "../Data/samples_Rec21"
 folder2 = "../Data/samples_Rec21_part2"
 extra_files = [
-    "../Data/samples_Rec21/x0.npy",
-    "../Data/samples_Rec21/x1.npy",
-    "../Data/average_samples.npy",
+    "./timeline_x0.npy",
+    "./timeline_x1.npy",
+    "../Data/average_2000_samples.npy",
 ]
 output_file = "power_spectra_logarithmic.npz"
 

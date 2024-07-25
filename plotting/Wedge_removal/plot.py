@@ -7,17 +7,15 @@ colors = ["purple", "#306B37", "darkgoldenrod", "#3F7BB6", "#BF4145", "#cf630a"]
 
 fig = plt.figure(figsize=(6, 12.5))
 
-# Create a GridSpec for the subplots
 gs = fig.add_gridspec(4, 2, height_ratios=[2, 0.26, 1, 1], hspace=0.08, wspace=0.08)
 
-# The first plot occupies the entire first row
 ax1 = fig.add_subplot(gs[0, :])
 ax1.tick_params(axis="x", which="major", pad=6)
 ax1.tick_params(axis="both", which="major", labelsize=21)
 ax1.tick_params(axis="both", which="minor", labelsize=21)
 
 kperp = np.geomspace(1e-2, 1, 1000)
-kpar = np.tan(65.0 / 180 * np.pi) * kperp  # ** (1.065)
+kpar = np.tan(65.0 / 180 * np.pi) * kperp
 
 ax1.plot(kperp, kpar, color=colors[3], lw=1.6)
 ax1.fill_between(
@@ -115,8 +113,26 @@ rho_x0 = np.load("timeline_x0.npy")
 
 ax2_1.imshow(rho_x1[10, :, :], cmap="viridis")
 ax2_2.imshow(rho_x0[10, :, :], cmap="viridis")
-ax2_3.imshow(rho_x1[:, :, 10], cmap="viridis")
-ax2_4.imshow(rho_x0[:, :, 10], cmap="viridis")
+ax2_3.imshow(rho_x1[::-1, :, 10], cmap="viridis")
+ax2_4.imshow(rho_x0[::-1, :, 10], cmap="viridis")
+
+ax2_3.annotate(
+    "",
+    xy=(10, 60),
+    xytext=(10, 120),
+    transform=ax2_3.transAxes,
+    arrowprops=dict(
+        facecolor="black", edgecolor="black", headwidth=3, headlength=4, width=0.01
+    ),
+)
+ax2_3.text(
+    13,
+    115,
+    r"$\mathrm{Higher\ redshift}$",
+    color="black",
+    rotation=90,
+    fontsize=9,
+)
 
 ax2_1.set_xticks([])
 ax2_1.set_yticks([])
@@ -138,5 +154,4 @@ ax2_2.set_aspect("equal")
 ax2_3.set_aspect("equal")
 ax2_4.set_aspect("equal")
 
-# plt.tight_layout()
 plt.savefig("Wedge_Plots.pdf")
