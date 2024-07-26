@@ -181,21 +181,13 @@ class Exp_Reconstruct(object):
             x0_to_use, x1_to_use = next(iter(self.test_loader))
             x0_to_use, x1_to_use = x0_to_use[:1], x1_to_use[:1]
 
-            mean = x1_to_use.mean().item()
-            std = x1_to_use.std().item()
-
-            vmin = mean - 2 * std
-            vmax = mean + 2 * std
-
-            # x0_to_use.to(self.device)
-            # x1_to_use #.to(self.device)
             sampled_images = self.sample(x0_to_use, n_steps=n_steps, n_save=n_save)
 
             # Initial image
             ax[row, 0].set_title(f"T21_wr")
             ax[row, 0].imshow(
                 x0_to_use.detach().cpu().numpy()[0][0][10, :, :].squeeze()
-            )  # , vmin=vmin, vmax=vmax)
+            )
             ax[row, 0].set_xticks([])
             ax[row, 0].set_yticks([])
 
@@ -205,7 +197,7 @@ class Exp_Reconstruct(object):
                 ax[row, i + 1].set_title(f"Steps = {step}")
                 ax[row, i + 1].imshow(
                     sampled_images[i].detach().cpu().numpy()[0][0][10, :, :].squeeze()
-                )  # , vmin=vmin, vmax=vmax)
+                )
                 ax[row, i + 1].set_xticks([])
                 ax[row, i + 1].set_yticks([])
 
@@ -213,7 +205,7 @@ class Exp_Reconstruct(object):
             ax[row, -1].set_title(f"T21")
             ax[row, -1].imshow(
                 x1_to_use.detach().cpu().numpy()[0][0][10, :, :].squeeze()
-            )  # , vmin=vmin, vmax=vmax)
+            )
             ax[row, -1].set_xticks([])
             ax[row, -1].set_yticks([])
 
@@ -237,5 +229,5 @@ class Exp_Reconstruct(object):
             sampled_images = self.sample(x0_to_use, n_steps=n_steps, n_save=n_save)
             final_image = sampled_images[-1].detach().cpu().numpy()[0][0].squeeze()
 
-            # Save each sampled image immediately
+            # Save each sampled image
             np.save(dir_name + f"/sample_{i}.npy", final_image)
