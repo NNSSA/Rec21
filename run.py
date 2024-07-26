@@ -11,17 +11,17 @@ torch.manual_seed(fix_seed)
 np.random.seed(fix_seed)
 
 args = SimpleNamespace(
-    model_id="Rec21_200k_finalfinal_5epochs_halfdata_48M_samples",
+    model_id="Rec21_43M",
     # data loader
-    file_path="data_highres/final_data_LC_z=10.0_512Mpc_128Cells_200120boxes.h5",
+    file_path="data_highres/data_LC_z=10.0_512Mpc_128Cells.h5",
     T21_name="T21_data",
     T21_wr_name="T21_wr_data",
     train_ratio=0.9,
     # training
-    train_from_scratch=False,
-    id_pretained_model="Rec21_200k_finalfinal_5epochs_halfdata",
+    train_from_scratch=True,
+    id_pretained_model="Rec21_43M",
     # sampling (only if train_from_scratch = False)
-    write_samples=True,  # set to False if want to plot a few samples
+    write_samples=False,  # set to False if want to plot a few samples
     N_samples=1000,
     # model parameters
     in_channels=1,
