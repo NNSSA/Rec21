@@ -62,4 +62,4 @@
 
 ## Contact
 
-For any questions, please contact: [nash.sabti@gmail.com](mailto:nash.sabti@gmail.com)
+For any questions or issues, please contact: [nash.sabti@gmail.com](mailto:nash.sabti@gmail.com)
