@@ -1,6 +1,10 @@
 <h1 align="center">Neural 3D Reconstruction for 21-cm Tomographic Data</h1>
 
 <p align="center">
+  <img src="Rec21_logo.png" width="400">
+</p>
+
+<p align="center">
   <strong>Author:</strong> Nash Sabti<br>
   <strong>Paper:</strong> A Generative Modeling Approach to Reconstructing 21-cm Tomographic Data
 </p>
