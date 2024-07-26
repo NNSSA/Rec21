@@ -1,13 +1,16 @@
 <h1 align="center">Neural 3D Reconstruction for 21-cm Tomographic Data</h1>
 
 <p align="center">
-  <strong>Author:</strong> Nashwan Sabti<br>
+  <strong>Author:</strong> Nash Sabti<br>
   <strong>Paper:</strong> A Generative Modeling Approach to Reconstructing 21-cm Tomographic Data
 </p>
 
 <p align="center">
+<kbd>
   <img src="example.gif" alt="Example GIF" style="border: 1px solid white;">
+</kbd>
 </p>
+
 
 ## How to Use the Code
 
