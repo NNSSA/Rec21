@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>Author:</strong> Nash Sabti<br>
-  <strong>Paper:</strong> A Generative Modeling Approach to Reconstructing 21-cm Tomographic Data
+  <strong>Paper:</strong> <a href="https://arxiv.org/abs/2407.21097"> A Generative Modeling Approach to Reconstructing 21-cm Tomographic Data </a>
 </p>
 
 <p align="center">
